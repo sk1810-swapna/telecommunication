@@ -13,7 +13,7 @@ import numpy as np
 import joblib
 
 # Load model and scaler
-model = joblib.load(model,'rf_model.pkl')
+model = joblib.dump(model,'rf_model.pkl')
 scaler = joblib.load('scaler.pkl')
 
 # App title
