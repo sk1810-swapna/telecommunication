@@ -1,4 +1,5 @@
 # telecom_churn_app.py
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from imblearn.over_sampling import SMOTE
 
+# --- Page Config ---
 st.set_page_config(page_title="📞 Telecom Churn Predictor", layout="centered")
 
 # --- Load or Train Model ---
@@ -20,33 +22,39 @@ def load_or_train_model():
         try:
             df = pd.read_csv("telecommunications_churn (1).csv")
         except FileNotFoundError:
-            st.error("❌ Dataset 'telecom_churn.csv' not found. Please upload it to the app directory.")
+            st.error("❌ Dataset 'telecommunications_churn (1).csv' not found. Please upload it to the app directory.")
             st.stop()
 
         # Drop unused columns
         df.drop(columns=['international_plan', 'voice_mail_plan'], errors='ignore', inplace=True)
 
+        # Clean data
         df.dropna(inplace=True)
         df = df[df['churn'].isin([0, 1])]
 
+        # Split features and target
         X = df.drop(columns=['churn'])
         y = df['churn']
 
+        # Balance classes
         smote = SMOTE(random_state=42)
         X_resampled, y_resampled = smote.fit_resample(X, y)
 
+        # Scale features
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X_resampled)
 
+        # Train model
         model = RandomForestClassifier(class_weight='balanced', random_state=42)
         model.fit(X_scaled, y_resampled)
 
-        # Validate model behavior
+        # Validate model
         unique_preds = np.unique(model.predict(X_scaled))
         if len(unique_preds) == 1:
             st.error("❌ Model is predicting only one class after training. Please check your data balance.")
             st.stop()
 
+        # Save artifacts
         feature_names = X.columns.tolist()
         joblib.dump(model, "rf_model.pkl")
         joblib.dump(scaler, "scaler.pkl")
@@ -56,10 +64,11 @@ def load_or_train_model():
 
 model, scaler, feature_names = load_or_train_model()
 
-# --- User Input ---
+# --- Title & Instructions ---
 st.title("📞 Telecom Churn Predictor")
 st.markdown("Enter customer details to predict churn:")
 
+# --- User Input ---
 def user_input_features():
     account_length = st.slider("Account Length", 1, 250, 100)
     customer_service_calls = st.slider("Customer Service Calls", 0, 10, 1)
@@ -101,13 +110,13 @@ if st.button("Predict Churn"):
         st.subheader("🔢 Churn Prediction")
         st.code(f"{prediction}", language="text")
 
-# Add a short message based on prediction
+        # Add a short message based on prediction
         amsg = "Customer is likely to churn." if prediction == 1 else "Customer is likely to stay."
         st.write(f"🗨️ {amsg}")
 
-# Optional: show confidence score
-with st.expander("Show Prediction Confidence"):
-    st.write(f"Confidence: {prediction_proba:.2f}")
+        # Optional: show confidence score
+        with st.expander("Show Prediction Confidence"):
+            st.write(f"Confidence: {prediction_proba:.2f}")
 
     except ValueError as e:
         st.error(f"❌ Prediction failed due to input mismatch: {e}")
