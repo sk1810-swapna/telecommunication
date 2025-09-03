@@ -3,48 +3,45 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import os
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
-import os
 
-st.set_page_config(page_title="Telecom Churn Predictor", layout="centered")
+st.set_page_config(page_title="📞 Telecom Churn Predictor", layout="centered")
 
 # --- Load or Train Model ---
 def load_or_train_model():
-    if os.path.exists("rf_model.pkl") and os.path.exists("scaler.pkl"):
+    if all(os.path.exists(f) for f in ["rf_model.pkl", "scaler.pkl", "feature_names.pkl"]):
         model = joblib.load("rf_model.pkl")
         scaler = joblib.load("scaler.pkl")
+        feature_names = joblib.load("feature_names.pkl")
     else:
         df = pd.read_csv("telecom_churn.csv")
-
-        # Basic cleaning
         df.dropna(inplace=True)
         df = df[df['churn'].isin([0, 1])]
 
         X = df.drop(columns=['churn'])
         y = df['churn']
 
-        # Balance data
         smote = SMOTE(random_state=42)
         X_resampled, y_resampled = smote.fit_resample(X, y)
 
-        # Scale features
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X_resampled)
 
-        # Train model
         model = RandomForestClassifier(class_weight='balanced', random_state=42)
         model.fit(X_scaled, y_resampled)
 
-        # Save model
+        feature_names = X.columns.tolist()
         joblib.dump(model, "rf_model.pkl")
         joblib.dump(scaler, "scaler.pkl")
+        joblib.dump(feature_names, "feature_names.pkl")
 
-    return model, scaler
+    return model, scaler, feature_names
 
-model, scaler = load_or_train_model()
+model, scaler, feature_names = load_or_train_model()
 
 # --- User Input ---
 st.title("📞 Telecom Churn Predictor")
@@ -75,6 +72,13 @@ def user_input_features():
 
 input_df = user_input_features()
 
+# --- Align Input with Training Features ---
+for col in feature_names:
+    if col not in input_df.columns:
+        input_df[col] = 0  # default fallback
+
+input_df = input_df[feature_names]
+
 # --- Prediction ---
 if st.button("Predict Churn"):
     input_scaled = scaler.transform(input_df)
@@ -86,13 +90,11 @@ if st.button("Predict Churn"):
     else:
         st.success(f"✅ This customer is likely to stay. Confidence: {prediction_proba:.2f}")
 
-# --- Diagnostic ---
-def check_model_bias(model, X):
-    preds = model.predict(X)
+# --- Diagnostic: Check for Single-Class Prediction ---
+def check_model_bias(model, X_sample):
+    preds = model.predict(X_sample)
     unique_preds = np.unique(preds)
     if len(unique_preds) == 1:
         st.warning("⚠️ Model is predicting only one class. Consider retraining with more balanced data.")
 
-# Run diagnostic
-X_sample = scaler.transform(input_df)
-check_model_bias(model, X_sample)
+check_model_bias(model, scaler.transform(input_df))
