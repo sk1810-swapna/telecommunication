@@ -1,74 +1,73 @@
 # -*- coding: utf-8 -*-
-"""app.py — Telecom Churn Prediction"""
+"""app.py — Telecom Churn Probability Modeling"""
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 
-# App title
-st.title("📊 Telecom Churn Prediction")
-st.markdown("Enter customer details to predict churn likelihood.")
+# Title and project description
+st.title("📉 Telecom Churn Probability Model")
+st.markdown("""
+Customer churn is a major challenge for telecom companies, with annual churn rates often exceeding 10%.  
+This app models the probability of churn based on customer features, helping identify clients at risk and guiding retention strategies.
+""")
 
-# Load model and scaler safely
+# Load model and scaler
 try:
     model = joblib.load('rf_model.pkl')
     scaler = joblib.load('scaler.pkl')
 except FileNotFoundError:
-    st.error("❌ Model or scaler file not found. Please upload 'rf_model.pkl' and 'scaler.pkl'.")
+    st.error("❌ Required files not found. Please ensure 'rf_model.pkl' and 'scaler.pkl' are present.")
     st.stop()
 except ModuleNotFoundError as e:
-    st.error(f"❌ Missing module during model loading: {e}. Make sure all dependencies are installed.")
+    st.error(f"❌ Module error: {e}. Check your environment setup.")
     st.stop()
 
-# Sidebar input fields
-def user_input():
-    account_length = st.number_input("Account Length", min_value=1, max_value=300, value=100)
-    customer_service_calls = st.number_input("Customer Service Calls", min_value=0, max_value=10, value=1)
-    day_mins = st.number_input("Day Minutes", min_value=0.0, max_value=500.0, value=120.0)
-    total_charge = st.number_input("Total Charge", min_value=0.0, max_value=100.0, value=45.0)
+# Input form
+st.sidebar.header("📋 Customer Features")
+def get_input():
+    account_length = st.sidebar.number_input("Account Length", min_value=1, max_value=300, value=100)
+    customer_service_calls = st.sidebar.number_input("Customer Service Calls", min_value=0, max_value=10, value=1)
+    day_mins = st.sidebar.number_input("Day Minutes", min_value=0.0, max_value=500.0, value=120.0)
+    total_charge = st.sidebar.number_input("Total Charge", min_value=0.0, max_value=100.0, value=45.0)
 
-    input_dict = {
+    return pd.DataFrame([{
         'account_length': account_length,
         'customer_service_calls': customer_service_calls,
         'day_mins': day_mins,
         'total_charge': total_charge
-    }
-    return pd.DataFrame([input_dict])
+    }])
 
-input_df = user_input()
+input_df = get_input()
 
 # Display input
-st.subheader("Customer Input")
+st.subheader("🔍 Customer Profile")
 st.write(input_df)
 
-# Add prediction button
-if st.button("🔍 Predict Churn"):
+# Prediction button
+if st.button("📊 Predict Churn Probability"):
     try:
-        # Align input features with scaler expectations
+        # Align input with scaler
         expected_features = scaler.feature_names_in_
-        missing_cols = [col for col in expected_features if col not in input_df.columns]
-
-        # Fill missing columns with default values
-        for col in missing_cols:
-            input_df[col] = 0.0
-
-        # Reorder columns to match scaler
+        for col in expected_features:
+            if col not in input_df.columns:
+                input_df[col] = 0.0
         input_df = input_df[expected_features]
 
-        # Scale input
+        # Scale and predict
         input_scaled = scaler.transform(input_df)
-
-        # Predict
         prediction = model.predict(input_scaled)
-        prediction_proba = model.predict_proba(input_scaled)
+        prediction_proba = model.predict_proba(input_scaled)[0][1]
 
-        # Show result
-        st.subheader("Prediction Result")
-        
+        # Output
+        st.subheader("🧠 Prediction Result")
+        st.write(f"**Estimated Churn Probability:** `{prediction_proba:.2%}`")
 
-        # Show probability
-        st.write(f"Probability of churn: {prediction_proba[0][1]:.2%}")
+        if prediction[0] == 1:
+            st.error("⚠️ This customer is likely to churn. Consider proactive retention strategies.")
+        else:
+            st.success("✅ This customer is likely to stay. Maintain engagement and satisfaction.")
 
     except Exception as e:
-        st.error(f"❌ Error during prediction: {e}")
+        st.error(f"❌ Prediction error: {e}")
