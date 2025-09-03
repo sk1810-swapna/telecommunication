@@ -51,7 +51,7 @@ def load_or_train_model():
         # Validate model
         unique_preds = np.unique(model.predict(X_scaled))
         if len(unique_preds) == 1:
-            st.error("❌ Model is predicting only one class after training. Please check your data balance.")
+            st.error(f"❌ Model is predicting only one class ({unique_preds[0]}) after training. Please check your data balance.")
             st.stop()
 
         # Save artifacts
