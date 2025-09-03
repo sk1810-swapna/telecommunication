@@ -1,0 +1,4 @@
+import joblib
+
+joblib.dump(model, 'rf_model.pkl')
+joblib.dump(scaler, 'scaler.pkl')
