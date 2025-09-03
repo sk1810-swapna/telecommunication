@@ -62,25 +62,28 @@ st.markdown("Use the sidebar to enter customer details. The app will predict whe
 # --- Sidebar Input ---
 st.sidebar.header("📋 Customer Details")
 def user_input_features():
-    account_length = st.sidebar.slider("Account Length", 1, 250, 100)
-    customer_service_calls = st.sidebar.slider("Customer Service Calls", 0, 10, 1)
-    total_day_minutes = st.sidebar.slider("Total Day Minutes", 0.0, 400.0, 180.0)
-    total_eve_minutes = st.sidebar.slider("Total Evening Minutes", 0.0, 400.0, 180.0)
-    total_night_minutes = st.sidebar.slider("Total Night Minutes", 0.0, 400.0, 180.0)
-    total_intl_minutes = st.sidebar.slider("Total Intl Minutes", 0.0, 20.0, 10.0)
-
-    data = {
-        "account_length": account_length,
-        "customer_service_calls": customer_service_calls,
-        "total_day_minutes": total_day_minutes,
-        "total_eve_minutes": total_eve_minutes,
-        "total_night_minutes": total_night_minutes,
-        "total_intl_minutes": total_intl_minutes
+    raw_inputs = {
+        "Account Length": st.sidebar.slider("Account Length", 1, 250, 100),
+        "Customer Service Calls": st.sidebar.slider("Customer Service Calls", 0, 10, 1),
+        "Total Day Minutes": st.sidebar.slider("Total Day Minutes", 0.0, 400.0, 180.0),
+        "Total Evening Minutes": st.sidebar.slider("Total Evening Minutes", 0.0, 400.0, 180.0),
+        "Total Night Minutes": st.sidebar.slider("Total Night Minutes", 0.0, 400.0, 180.0),
+        "Total Intl Minutes": st.sidebar.slider("Total Intl Minutes", 0.0, 20.0, 10.0)
     }
 
-    return pd.DataFrame([data])
+    # Convert to model input format
+    model_input = {
+        "account_length": raw_inputs["Account Length"],
+        "customer_service_calls": raw_inputs["Customer Service Calls"],
+        "total_day_minutes": raw_inputs["Total Day Minutes"],
+        "total_eve_minutes": raw_inputs["Total Evening Minutes"],
+        "total_night_minutes": raw_inputs["Total Night Minutes"],
+        "total_intl_minutes": raw_inputs["Total Intl Minutes"]
+    }
 
-input_df = user_input_features()
+    return pd.DataFrame([model_input]), pd.DataFrame([raw_inputs])
+
+input_df, summary_df = user_input_features()
 
 # --- Align Input with Training Features ---
 for col in feature_names:
@@ -91,7 +94,7 @@ input_df = input_df[feature_names]
 input_df.columns.name = None
 input_df = input_df.astype(float)
 
-# --- Display Summary Table ---
+# --- Display Summary Table (Sidebar Inputs Only) ---
 # --- Display Summary Table (Sidebar Inputs Only) ---
 raw_inputs = {
     "Account Length": input_df["account_length"].values[0],
