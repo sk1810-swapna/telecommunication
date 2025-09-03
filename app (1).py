@@ -1,73 +1,64 @@
-# -*- coding: utf-8 -*-
-"""app.py — Binary Churn Prediction"""
-
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
 
-# Title and description
-st.title("📉 Telecom Churn Classifier")
-st.markdown("""
-This app predicts whether a telecom customer is likely to **churn (1)** or **stay loyal (0)**  
-based on key behavioral and usage features.  
-Use it to identify high-risk customers and guide retention strategies.
-""")
-
 # Load model and scaler
-try:
-    model = joblib.load('rf_model.pkl')
-    scaler = joblib.load('scaler.pkl')
-except FileNotFoundError:
-    st.error("❌ Missing model or scaler file. Please upload 'rf_model.pkl' and 'scaler.pkl'.")
-    st.stop()
-except ModuleNotFoundError as e:
-    st.error(f"❌ Module error: {e}. Check your environment setup.")
-    st.stop()
+model = joblib.load("model.pkl")
+scaler = joblib.load("scaler.pkl")
 
-# Sidebar inputs
-st.sidebar.header("📋 Customer Features")
-def get_input():
-    account_length = st.sidebar.number_input("Account Length", min_value=1, max_value=300, value=100)
-    customer_service_calls = st.sidebar.number_input("Customer Service Calls", min_value=0, max_value=10, value=1)
-    day_mins = st.sidebar.number_input("Day Minutes", min_value=0.0, max_value=500.0, value=120.0)
-    total_charge = st.sidebar.number_input("Total Charge", min_value=0.0, max_value=100.0, value=45.0)
+st.title("📞 Customer Churn Prediction App")
+st.markdown("Predict whether a customer will churn based on their service usage.")
 
-    return pd.DataFrame([{
-        'account_length': account_length,
-        'customer_service_calls': customer_service_calls,
-        'day_mins': day_mins,
-        'total_charge': total_charge
-    }])
+# Input fields
+customer_service_calls = st.number_input("Number of Customer Service Calls", min_value=0, step=1)
+account_length = st.number_input("Account Length", min_value=0, step=1)
+international_plan = st.selectbox("International Plan", ["Yes", "No"])
+voice_mail_plan = st.selectbox("Voice Mail Plan", ["Yes", "No"])
+total_day_minutes = st.number_input("Total Day Minutes", min_value=0.0, step=0.1)
+total_eve_minutes = st.number_input("Total Evening Minutes", min_value=0.0, step=0.1)
+total_night_minutes = st.number_input("Total Night Minutes", min_value=0.0, step=0.1)
+total_intl_minutes = st.number_input("Total International Minutes", min_value=0.0, step=0.1)
 
-input_df = get_input()
+# Prepare input DataFrame
+input_dict = {
+    "account_length": account_length,
+    "international_plan": 1 if international_plan == "Yes" else 0,
+    "voice_mail_plan": 1 if voice_mail_plan == "Yes" else 0,
+    "customer_service_calls": customer_service_calls,
+    "total_day_minutes": total_day_minutes,
+    "total_eve_minutes": total_eve_minutes,
+    "total_night_minutes": total_night_minutes,
+    "total_intl_minutes": total_intl_minutes
+}
 
-# Show input
-st.subheader("🔍 Customer Profile")
-st.write(input_df)
+input_df = pd.DataFrame([input_dict])
 
 # Predict button
 if st.button("📊 Predict Churn (Binary)"):
     try:
-        # Align input with scaler
-        expected_features = scaler.feature_names_in_
-        for col in expected_features:
-            if col not in input_df.columns:
-                input_df[col] = 0.0
-        input_df = input_df[expected_features]
-
-        # Scale and predict
-        input_scaled = scaler.transform(input_df)
-        prediction = model.predict(input_scaled)[0]
-
-        # Display result
-        st.subheader("🧠 Prediction Result")
-        st.write(f"**Binary Churn Prediction:** `{prediction}`")
-
-        if prediction == 1:
-            st.error("⚠️ This customer is predicted to churn.")
+        # Filter: Only predict if service calls > 10
+        if input_df['customer_service_calls'].iloc[0] <= 10:
+            st.warning("⚠️ Prediction skipped: Customer must have made more than 10 service calls.")
         else:
-            st.success("✅ This customer is predicted to stay loyal.")
+            # Align input with scaler
+            expected_features = scaler.feature_names_in_
+            for col in expected_features:
+                if col not in input_df.columns:
+                    input_df[col] = 0.0
+            input_df = input_df[expected_features]
+
+            # Scale and predict
+            input_scaled = scaler.transform(input_df)
+            prediction = model.predict(input_scaled)[0]
+
+            # Display result
+            st.subheader("🧠 Prediction Result")
+            st.write(f"**Binary Churn Prediction:** `{prediction}`")
+
+            if prediction == 1:
+                st.error("⚠️ This customer is predicted to churn.")
+            else:
+                st.success("✅ This customer is predicted to stay loyal.")
 
     except Exception as e:
         st.error(f"❌ Prediction error: {e}")
