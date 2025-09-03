@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""app.py — Telecom Churn Risk Tiering"""
+"""app.py — Binary Churn Prediction"""
 
 import streamlit as st
 import pandas as pd
@@ -7,10 +7,11 @@ import numpy as np
 import joblib
 
 # Title and description
-st.title("📉 Telecom Churn Risk Predictor")
+st.title("📉 Telecom Churn Classifier")
 st.markdown("""
-Telecom companies face annual churn rates over 10%.  
-This app estimates the **probability of churn** for individual customers and classifies them into **risk tiers** to guide retention strategies.
+This app predicts whether a telecom customer is likely to **churn (1)** or **stay loyal (0)**  
+based on key behavioral and usage features.  
+Use it to identify high-risk customers and guide retention strategies.
 """)
 
 # Load model and scaler
@@ -45,17 +46,8 @@ input_df = get_input()
 st.subheader("🔍 Customer Profile")
 st.write(input_df)
 
-# Risk tier logic
-def classify_risk(prob):
-    if prob < 0.30:
-        return "🟢 Low Risk", "Customer is unlikely to churn. Maintain satisfaction."
-    elif prob < 0.70:
-        return "🟡 Medium Risk", "Customer shows moderate churn risk. Monitor engagement."
-    else:
-        return "🔴 High Risk", "Customer is likely to churn. Consider proactive retention."
-
 # Predict button
-if st.button("📊 Estimate Churn Risk"):
+if st.button("📊 Predict Churn (Binary)"):
     try:
         # Align input with scaler
         expected_features = scaler.feature_names_in_
@@ -66,16 +58,16 @@ if st.button("📊 Estimate Churn Risk"):
 
         # Scale and predict
         input_scaled = scaler.transform(input_df)
-        prediction_proba = model.predict_proba(input_scaled)[0][1]
-
-        # Classify risk
-        risk_label, advice = classify_risk(prediction_proba)
+        prediction = model.predict(input_scaled)[0]
 
         # Display result
         st.subheader("🧠 Prediction Result")
-        st.write(f"**Estimated Churn Probability:** `{prediction_proba:.2%}`")
-        st.markdown(f"**Risk Tier:** {risk_label}")
-        st.info(advice)
+        st.write(f"**Binary Churn Prediction:** `{prediction}`")
+
+        if prediction == 1:
+            st.error("⚠️ This customer is predicted to churn.")
+        else:
+            st.success("✅ This customer is predicted to stay loyal.")
 
     except Exception as e:
         st.error(f"❌ Prediction error: {e}")
