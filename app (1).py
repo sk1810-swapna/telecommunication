@@ -6,7 +6,6 @@ import joblib
 import os
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import SMOTE
 
 st.set_page_config(page_title="📞 Telecom Churn Predictor", layout="centered")
@@ -18,7 +17,12 @@ def load_or_train_model():
         scaler = joblib.load("scaler.pkl")
         feature_names = joblib.load("feature_names.pkl")
     else:
-        df = pd.read_csv("telecom_churn.csv")
+        try:
+            df = pd.read_csv("telecom_churn.csv")
+        except FileNotFoundError:
+            st.error("❌ Dataset 'telecom_churn.csv' not found. Please upload it to the app directory.")
+            st.stop()
+
         df.dropna(inplace=True)
         df = df[df['churn'].isin([0, 1])]
 
