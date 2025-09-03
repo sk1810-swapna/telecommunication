@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""app.py — Telecom Churn Probability Modeling"""
+"""app.py — Telecom Churn Risk Tiering"""
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 
-# Title and project description
-st.title("📉 Telecom Churn Probability Model")
+# Title and description
+st.title("📉 Telecom Churn Risk Predictor")
 st.markdown("""
-Customer churn is a major challenge for telecom companies, with annual churn rates often exceeding 10%.  
-This app models the probability of churn based on customer features, helping identify clients at risk and guiding retention strategies.
+Telecom companies face annual churn rates over 10%.  
+This app estimates the **probability of churn** for individual customers and classifies them into **risk tiers** to guide retention strategies.
 """)
 
 # Load model and scaler
@@ -18,13 +18,13 @@ try:
     model = joblib.load('rf_model.pkl')
     scaler = joblib.load('scaler.pkl')
 except FileNotFoundError:
-    st.error("❌ Required files not found. Please ensure 'rf_model.pkl' and 'scaler.pkl' are present.")
+    st.error("❌ Missing model or scaler file. Please upload 'rf_model.pkl' and 'scaler.pkl'.")
     st.stop()
 except ModuleNotFoundError as e:
     st.error(f"❌ Module error: {e}. Check your environment setup.")
     st.stop()
 
-# Input form
+# Sidebar inputs
 st.sidebar.header("📋 Customer Features")
 def get_input():
     account_length = st.sidebar.number_input("Account Length", min_value=1, max_value=300, value=100)
@@ -41,12 +41,21 @@ def get_input():
 
 input_df = get_input()
 
-# Display input
+# Show input
 st.subheader("🔍 Customer Profile")
 st.write(input_df)
 
-# Prediction button
-if st.button("📊 Predict Churn Probability"):
+# Risk tier logic
+def classify_risk(prob):
+    if prob < 0.30:
+        return "🟢 Low Risk", "Customer is unlikely to churn. Maintain satisfaction."
+    elif prob < 0.70:
+        return "🟡 Medium Risk", "Customer shows moderate churn risk. Monitor engagement."
+    else:
+        return "🔴 High Risk", "Customer is likely to churn. Consider proactive retention."
+
+# Predict button
+if st.button("📊 Estimate Churn Risk"):
     try:
         # Align input with scaler
         expected_features = scaler.feature_names_in_
@@ -57,17 +66,16 @@ if st.button("📊 Predict Churn Probability"):
 
         # Scale and predict
         input_scaled = scaler.transform(input_df)
-        prediction = model.predict(input_scaled)
         prediction_proba = model.predict_proba(input_scaled)[0][1]
 
-        # Output
+        # Classify risk
+        risk_label, advice = classify_risk(prediction_proba)
+
+        # Display result
         st.subheader("🧠 Prediction Result")
         st.write(f"**Estimated Churn Probability:** `{prediction_proba:.2%}`")
-
-        if prediction[0] == 1:
-            st.error("⚠️ This customer is likely to churn. Consider proactive retention strategies.")
-        else:
-            st.success("✅ This customer is likely to stay. Maintain engagement and satisfaction.")
+        st.markdown(f"**Risk Tier:** {risk_label}")
+        st.info(advice)
 
     except Exception as e:
         st.error(f"❌ Prediction error: {e}")
