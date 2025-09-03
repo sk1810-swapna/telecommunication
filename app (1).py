@@ -1,69 +1,98 @@
+# telecom_churn_app.py
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from imblearn.over_sampling import SMOTE
+import os
 
-# Load model and scaler
-model = joblib.load('rf_model.pkl')
-scaler = joblib.load('scaler.pkl')
+st.set_page_config(page_title="Telecom Churn Predictor", layout="centered")
 
-# Get expected feature names from scaler
-expected_features = scaler.feature_names_in_.tolist()
-
-# Title
-st.title("📉 Churn Prediction App")
-
-# Sidebar inputs
-st.sidebar.header("Customer Info")
-
-# Create input dictionary dynamically
-input_dict = {}
-for feature in expected_features:
-    label = feature.replace('_', ' ').title()
-    if "length" in feature or "calls" in feature or "messages" in feature:
-        input_dict[feature] = st.sidebar.slider(label, 0, 250, 50)
-    elif "mins" in feature:
-        input_dict[feature] = st.sidebar.slider(label, 0.0, 350.0, 180.0)
-    elif "charge" in feature:
-        input_dict[feature] = st.sidebar.slider(label, 0.0, 60.0, 30.0)
+# --- Load or Train Model ---
+def load_or_train_model():
+    if os.path.exists("rf_model.pkl") and os.path.exists("scaler.pkl"):
+        model = joblib.load("rf_model.pkl")
+        scaler = joblib.load("scaler.pkl")
     else:
-        input_dict[feature] = st.sidebar.slider(label, 0.0, 100.0, 50.0)
+        df = pd.read_csv("telecom_churn.csv")
 
-# Align input with expected features
-try:
-    input_data = pd.DataFrame([input_dict])[expected_features]
-    scaled_input = scaler.transform(input_data)
-except Exception as e:
-    st.error(f"❌ Input preparation or scaling failed: {e}")
-    st.stop()
+        # Basic cleaning
+        df.dropna(inplace=True)
+        df = df[df['churn'].isin([0, 1])]
 
-# Predict
-try:
-    prediction = model.predict(scaled_input)[0]
-    proba = model.predict_proba(scaled_input)[0][1]
-except Exception as e:
-    st.error(f"❌ Prediction failed: {e}")
-    st.stop()
+        X = df.drop(columns=['churn'])
+        y = df['churn']
 
-# Output in binary format
-# Output
-if prediction == 1:
-    st.success(f"⚠️ This customer is likely to churn. (Probability: {proba:.2f})")
-else:
-    st.info(f"✅ This customer is likely to stay. (Probability of churn: {proba:.2f})")
-st.subheader("🔢 Churn Prediction (Binary Output)")
-st.code(f"{prediction}", language="text")
+        # Balance data
+        smote = SMOTE(random_state=42)
+        X_resampled, y_resampled = smote.fit_resample(X, y)
 
-# Optional: show probability
-with st.expander("Show Prediction Probability"):
-    st.write(f"Churn Probability: {proba:.2f}")
+        # Scale features
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X_resampled)
 
-# Diagnostic check for class diversity
-try:
-    test_data = pd.DataFrame(np.random.rand(100, len(expected_features)) * 100, columns=expected_features)
-    test_scaled = scaler.transform(test_data)
-    unique_preds = np.unique(model.predict(test_scaled))
+        # Train model
+        model = RandomForestClassifier(class_weight='balanced', random_state=42)
+        model.fit(X_scaled, y_resampled)
+
+        # Save model
+        joblib.dump(model, "rf_model.pkl")
+        joblib.dump(scaler, "scaler.pkl")
+
+    return model, scaler
+
+model, scaler = load_or_train_model()
+
+# --- User Input ---
+st.title("📞 Telecom Churn Predictor")
+st.markdown("Enter customer details to predict churn:")
+
+def user_input_features():
+    account_length = st.slider("Account Length", 1, 250, 100)
+    customer_service_calls = st.slider("Customer Service Calls", 0, 10, 1)
+    international_plan = st.selectbox("International Plan", ["Yes", "No"])
+    voice_mail_plan = st.selectbox("Voice Mail Plan", ["Yes", "No"])
+    total_day_minutes = st.slider("Total Day Minutes", 0.0, 400.0, 180.0)
+    total_eve_minutes = st.slider("Total Evening Minutes", 0.0, 400.0, 180.0)
+    total_night_minutes = st.slider("Total Night Minutes", 0.0, 400.0, 180.0)
+    total_intl_minutes = st.slider("Total Intl Minutes", 0.0, 20.0, 10.0)
+
+    data = {
+        "account_length": account_length,
+        "customer_service_calls": customer_service_calls,
+        "international_plan": 1 if international_plan == "Yes" else 0,
+        "voice_mail_plan": 1 if voice_mail_plan == "Yes" else 0,
+        "total_day_minutes": total_day_minutes,
+        "total_eve_minutes": total_eve_minutes,
+        "total_night_minutes": total_night_minutes,
+        "total_intl_minutes": total_intl_minutes
+    }
+
+    return pd.DataFrame([data])
+
+input_df = user_input_features()
+
+# --- Prediction ---
+if st.button("Predict Churn"):
+    input_scaled = scaler.transform(input_df)
+    prediction = model.predict(input_scaled)[0]
+    prediction_proba = model.predict_proba(input_scaled)[0][prediction]
+
+    if prediction == 1:
+        st.error(f"⚠️ This customer is likely to churn. Confidence: {prediction_proba:.2f}")
+    else:
+        st.success(f"✅ This customer is likely to stay. Confidence: {prediction_proba:.2f}")
+
+# --- Diagnostic ---
+def check_model_bias(model, X):
+    preds = model.predict(X)
+    unique_preds = np.unique(preds)
     if len(unique_preds) == 1:
         st.warning("⚠️ Model is predicting only one class. Consider retraining with more balanced data.")
-except Exception as e:
-    st.error(f"Diagnostic check failed: {e}")
+
+# Run diagnostic
+X_sample = scaler.transform(input_df)
+check_model_bias(model, X_sample)
