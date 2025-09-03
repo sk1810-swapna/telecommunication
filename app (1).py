@@ -18,10 +18,14 @@ def load_or_train_model():
         feature_names = joblib.load("feature_names.pkl")
     else:
         try:
-            df = pd.read_csv("telecommunications_churn (1).csv")
+            df = pd.read_csv("telecom_churn.csv")
         except FileNotFoundError:
             st.error("❌ Dataset 'telecom_churn.csv' not found. Please upload it to the app directory.")
             st.stop()
+
+        # Convert categorical to numeric
+        df['international_plan'] = df['international_plan'].map({'Yes': 1, 'No': 0})
+        df['voice_mail_plan'] = df['voice_mail_plan'].map({'Yes': 1, 'No': 0})
 
         df.dropna(inplace=True)
         df = df[df['churn'].isin([0, 1])]
@@ -38,7 +42,7 @@ def load_or_train_model():
         model = RandomForestClassifier(class_weight='balanced', random_state=42)
         model.fit(X_scaled, y_resampled)
 
-        # ✅ Validate model behavior before saving
+        # Validate model behavior
         unique_preds = np.unique(model.predict(X_scaled))
         if len(unique_preds) == 1:
             st.error("❌ Model is predicting only one class after training. Please check your data balance.")
@@ -85,11 +89,11 @@ input_df = user_input_features()
 # --- Align Input with Training Features ---
 for col in feature_names:
     if col not in input_df.columns:
-        input_df[col] = 0  # default fallback
+        input_df[col] = 0
 
 input_df = input_df[feature_names]
-input_df.columns.name = None  # ensure clean column names
-input_df = input_df.astype(float)  # ensure numeric types
+input_df.columns.name = None
+input_df = input_df.astype(float)
 
 # --- Prediction ---
 if st.button("Predict Churn"):
