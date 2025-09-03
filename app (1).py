@@ -65,10 +65,7 @@ if st.button("🔍 Predict Churn"):
 
         # Show result
         st.subheader("Prediction Result")
-        if prediction[0] == 1:
-            st.error("🔔 Churn Likely")
-        else:
-            st.success("✅ No Churn Predicted")
+        
 
         # Show probability
         st.write(f"Probability of churn: {prediction_proba[0][1]:.2%}")
