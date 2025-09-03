@@ -92,8 +92,19 @@ input_df.columns.name = None
 input_df = input_df.astype(float)
 
 # --- Display Summary Table ---
+# --- Display Summary Table (Sidebar Inputs Only) ---
+raw_inputs = {
+    "Account Length": input_df["account_length"].values[0],
+    "Customer Service Calls": input_df["customer_service_calls"].values[0],
+    "Total Day Minutes": input_df["total_day_minutes"].values[0],
+    "Total Evening Minutes": input_df["total_eve_minutes"].values[0],
+    "Total Night Minutes": input_df["total_night_minutes"].values[0],
+    "Total Intl Minutes": input_df["total_intl_minutes"].values[0]
+}
+
+summary_df = pd.DataFrame([raw_inputs])
 st.subheader("📊 Input Summary")
-st.dataframe(input_df.style.format(precision=2), use_container_width=True)
+st.dataframe(summary_df.style.format(precision=2), use_container_width=True)
 
 # --- Prediction ---
 if st.button("🔍 Predict Churn"):
