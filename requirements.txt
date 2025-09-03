@@ -1,3 +1,4 @@
 joblib
 category_encoders
-SMOTE
+imbalanced-learn
+
