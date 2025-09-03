@@ -3,9 +3,11 @@ import pandas as pd
 import numpy as np
 import joblib
 
-# Load model, scaler, and feature list
+# Load model and scaler
 model = joblib.load('rf_model.pkl')
 scaler = joblib.load('scaler.pkl')
+
+# Get expected feature names from scaler
 expected_features = scaler.feature_names_in_.tolist()
 
 # Title
@@ -33,21 +35,40 @@ intl_mins = st.sidebar.slider("International Minutes", 0.0, 20.0, 10.0)
 intl_calls = st.sidebar.slider("International Calls", 0, 20, 5)
 intl_charge = st.sidebar.slider("International Charge", 0.0, 5.0, 2.5)
 
-# Prepare input
-input_data = pd.DataFrame([[
-    account_length, customer_service_calls, total_charge,
-    day_calls, day_charge, day_mins,
-    evening_calls, evening_charge, evening_mins,
-    night_calls, night_charge, night_mins,
-    intl_calls, intl_charge, intl_mins
-]], columns=expected_features)
+# Create input dictionary
+input_dict = {
+    'account_length': account_length,
+    'customer_service_calls': customer_service_calls,
+    'total_charge': total_charge,
+    'day_mins': day_mins,
+    'day_calls': day_calls,
+    'day_charge': day_charge,
+    'evening_mins': evening_mins,
+    'evening_calls': evening_calls,
+    'evening_charge': evening_charge,
+    'night_mins': night_mins,
+    'night_calls': night_calls,
+    'night_charge': night_charge,
+    'intl_mins': intl_mins,
+    'intl_calls': intl_calls,
+    'intl_charge': intl_charge
+}
 
-# Scale input
-scaled_input = scaler.transform(input_data)
+# Align input with expected features
+try:
+    input_data = pd.DataFrame([input_dict])[expected_features]
+    scaled_input = scaler.transform(input_data)
+except Exception as e:
+    st.error(f"❌ Input preparation or scaling failed: {e}")
+    st.stop()
 
 # Predict
-prediction = model.predict(scaled_input)[0]
-proba = model.predict_proba(scaled_input)[0][1]
+try:
+    prediction = model.predict(scaled_input)[0]
+    proba = model.predict_proba(scaled_input)[0][1]
+except Exception as e:
+    st.error(f"❌ Prediction failed: {e}")
+    st.stop()
 
 # Output
 if prediction == 1:
@@ -55,7 +76,7 @@ if prediction == 1:
 else:
     st.info(f"✅ This customer is likely to stay. (Probability of churn: {proba:.2f})")
 
-# Diagnostic check
+# Diagnostic check for class diversity
 try:
     test_data = pd.DataFrame(np.random.rand(100, len(expected_features)) * 100, columns=expected_features)
     test_scaled = scaler.transform(test_data)
