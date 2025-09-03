@@ -23,9 +23,8 @@ def load_or_train_model():
             st.error("❌ Dataset 'telecom_churn.csv' not found. Please upload it to the app directory.")
             st.stop()
 
-        # Convert categorical to numeric
-        df['international_plan'] = df['international_plan'].map({'Yes': 1, 'No': 0})
-        df['voice_mail_plan'] = df['voice_mail_plan'].map({'Yes': 1, 'No': 0})
+        # Drop unused columns
+        df.drop(columns=['international_plan', 'voice_mail_plan'], errors='ignore', inplace=True)
 
         df.dropna(inplace=True)
         df = df[df['churn'].isin([0, 1])]
@@ -64,8 +63,6 @@ st.markdown("Enter customer details to predict churn:")
 def user_input_features():
     account_length = st.slider("Account Length", 1, 250, 100)
     customer_service_calls = st.slider("Customer Service Calls", 0, 10, 1)
-    international_plan = st.selectbox("International Plan", ["Yes", "No"])
-    voice_mail_plan = st.selectbox("Voice Mail Plan", ["Yes", "No"])
     total_day_minutes = st.slider("Total Day Minutes", 0.0, 400.0, 180.0)
     total_eve_minutes = st.slider("Total Evening Minutes", 0.0, 400.0, 180.0)
     total_night_minutes = st.slider("Total Night Minutes", 0.0, 400.0, 180.0)
@@ -74,8 +71,6 @@ def user_input_features():
     data = {
         "account_length": account_length,
         "customer_service_calls": customer_service_calls,
-        "international_plan": 1 if international_plan == "Yes" else 0,
-        "voice_mail_plan": 1 if voice_mail_plan == "Yes" else 0,
         "total_day_minutes": total_day_minutes,
         "total_eve_minutes": total_eve_minutes,
         "total_night_minutes": total_night_minutes,
