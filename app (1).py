@@ -25,13 +25,13 @@ except ModuleNotFoundError as e:
     st.error(f"❌ Module error: {e}. Check your environment setup.")
     st.stop()
 
-# Sidebar inputs
+# Sidebar inputs using sliders
 st.sidebar.header("📋 Customer Features")
 def get_input():
-    account_length = st.sidebar.number_input("Account Length", min_value=1, max_value=300, value=100)
-    customer_service_calls = st.sidebar.number_input("Customer Service Calls", min_value=0, max_value=10, value=1)
-    day_mins = st.sidebar.number_input("Day Minutes", min_value=0.0, max_value=500.0, value=120.0)
-    total_charge = st.sidebar.number_input("Total Charge", min_value=0.0, max_value=100.0, value=45.0)
+    account_length = st.sidebar.slider("Account Length", min_value=1, max_value=300, value=100)
+    customer_service_calls = st.sidebar.slider("Customer Service Calls", min_value=0, max_value=20, value=1)
+    day_mins = st.sidebar.slider("Day Minutes", min_value=0.0, max_value=500.0, value=120.0)
+    total_charge = st.sidebar.slider("Total Charge", min_value=0.0, max_value=100.0, value=45.0)
 
     return pd.DataFrame([{
         'account_length': account_length,
