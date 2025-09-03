@@ -38,6 +38,12 @@ def load_or_train_model():
         model = RandomForestClassifier(class_weight='balanced', random_state=42)
         model.fit(X_scaled, y_resampled)
 
+        # ✅ Validate model behavior before saving
+        unique_preds = np.unique(model.predict(X_scaled))
+        if len(unique_preds) == 1:
+            st.error("❌ Model is predicting only one class after training. Please check your data balance.")
+            st.stop()
+
         feature_names = X.columns.tolist()
         joblib.dump(model, "rf_model.pkl")
         joblib.dump(scaler, "scaler.pkl")
@@ -93,12 +99,3 @@ if st.button("Predict Churn"):
         st.error(f"⚠️ This customer is likely to churn. Confidence: {prediction_proba:.2f}")
     else:
         st.success(f"✅ This customer is likely to stay. Confidence: {prediction_proba:.2f}")
-
-# --- Diagnostic: Check for Single-Class Prediction ---
-def check_model_bias(model, X_sample):
-    preds = model.predict(X_sample)
-    unique_preds = np.unique(preds)
-    if len(unique_preds) == 1:
-        st.warning("⚠️ Model is predicting only one class. Consider retraining with more balanced data.")
-
-check_model_bias(model, scaler.transform(input_df))
