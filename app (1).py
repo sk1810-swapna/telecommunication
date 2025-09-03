@@ -98,12 +98,12 @@ if st.button("Predict Churn"):
         prediction_proba = model.predict_proba(input_scaled)[0][prediction]
 
         # Display binary prediction
-st.subheader("🔢 Churn Prediction")
-st.code(f"{prediction}", language="text")
+        st.subheader("🔢 Churn Prediction")
+        st.code(f"{prediction}", language="text")
 
 # Add a short message based on prediction
-amsg = "Customer is likely to churn." if prediction == 1 else "Customer is likely to stay."
-st.write(f"🗨️ {amsg}")
+        amsg = "Customer is likely to churn." if prediction == 1 else "Customer is likely to stay."
+        st.write(f"🗨️ {amsg}")
 
 # Optional: show confidence score
 with st.expander("Show Prediction Confidence"):
