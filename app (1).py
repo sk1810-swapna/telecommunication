@@ -46,6 +46,11 @@ except Exception as e:
     st.stop()
 
 # Output in binary format
+# Output
+if prediction == 1:
+    st.success(f"⚠️ This customer is likely to churn. (Probability: {proba:.2f})")
+else:
+    st.info(f"✅ This customer is likely to stay. (Probability of churn: {proba:.2f})")
 st.subheader("🔢 Churn Prediction (Binary Output)")
 st.code(f"{prediction}", language="text")
 
