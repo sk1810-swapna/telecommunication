@@ -1,10 +1,14 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import cloudpickle
 
-# Load model and scaler
-model = joblib.load("model.pkl")
-scaler = joblib.load("scaler.pkl")
+# Load model and scaler using cloudpickle
+def load_pickle(path):
+    with open(path, "rb") as f:
+        return cloudpickle.load(f)
+
+model = load_pickle("model.pkl")
+scaler = load_pickle("scaler.pkl")
 
 st.title("📞 Customer Churn Prediction App")
 st.markdown("Predict whether a customer will churn based on their service usage.")
@@ -24,7 +28,7 @@ input_dict = {
     "account_length": account_length,
     "international_plan": 1 if international_plan == "Yes" else 0,
     "voice_mail_plan": 1 if voice_mail_plan == "Yes" else 0,
-    "customer_service_calls": customer_service_calls,
+    "number_customer_service_calls": customer_service_calls,
     "total_day_minutes": total_day_minutes,
     "total_eve_minutes": total_eve_minutes,
     "total_night_minutes": total_night_minutes,
@@ -37,7 +41,7 @@ input_df = pd.DataFrame([input_dict])
 if st.button("📊 Predict Churn (Binary)"):
     try:
         # Filter: Only predict if service calls > 10
-        if input_df['customer_service_calls'].iloc[0] <= 10:
+        if input_df['number_customer_service_calls'].iloc[0] <= 10:
             st.warning("⚠️ Prediction skipped: Customer must have made more than 10 service calls.")
         else:
             # Align input with scaler
