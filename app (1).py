@@ -97,9 +97,17 @@ if st.button("Predict Churn"):
         prediction = model.predict(input_scaled)[0]
         prediction_proba = model.predict_proba(input_scaled)[0][prediction]
 
-        if prediction == 1:
-            st.error(f"⚠️ This customer is likely to churn. Confidence: {prediction_proba:.2f}")
-        else:
-            st.success(f"✅ This customer is likely to stay. Confidence: {prediction_proba:.2f}")
+        # Display binary prediction
+st.subheader("🔢 Churn Prediction")
+st.code(f"{prediction}", language="text")
+
+# Add a short message based on prediction
+amsg = "Customer is likely to churn." if prediction == 1 else "Customer is likely to stay."
+st.write(f"🗨️ {amsg}")
+
+# Optional: show confidence score
+with st.expander("Show Prediction Confidence"):
+    st.write(f"Confidence: {prediction_proba:.2f}")
+
     except ValueError as e:
         st.error(f"❌ Prediction failed due to input mismatch: {e}")
