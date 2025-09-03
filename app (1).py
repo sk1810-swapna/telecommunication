@@ -25,36 +25,27 @@ def load_or_train_model():
             st.error("❌ Dataset 'telecommunications_churn (1).csv' not found. Please upload it to the app directory.")
             st.stop()
 
-        # Drop unused columns
         df.drop(columns=['international_plan', 'voice_mail_plan'], errors='ignore', inplace=True)
-
-        # Clean data
         df.dropna(inplace=True)
         df = df[df['churn'].isin([0, 1])]
 
-        # Split features and target
         X = df.drop(columns=['churn'])
         y = df['churn']
 
-        # Balance classes
         smote = SMOTE(random_state=42)
         X_resampled, y_resampled = smote.fit_resample(X, y)
 
-        # Scale features
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X_resampled)
 
-        # Train model
         model = RandomForestClassifier(class_weight='balanced', random_state=42)
         model.fit(X_scaled, y_resampled)
 
-        # Validate model
         unique_preds = np.unique(model.predict(X_scaled))
         if len(unique_preds) == 1:
             st.error(f"❌ Model is predicting only one class ({unique_preds[0]}) after training. Please check your data balance.")
             st.stop()
 
-        # Save artifacts
         feature_names = X.columns.tolist()
         joblib.dump(model, "rf_model.pkl")
         joblib.dump(scaler, "scaler.pkl")
@@ -64,18 +55,19 @@ def load_or_train_model():
 
 model, scaler, feature_names = load_or_train_model()
 
-# --- Title & Instructions ---
+# --- Title ---
 st.title("📞 Telecom Churn Predictor")
-st.markdown("Enter customer details to predict churn:")
+st.markdown("Use the sidebar to enter customer details. The app will predict whether the customer is likely to churn.")
 
-# --- User Input ---
+# --- Sidebar Input ---
+st.sidebar.header("📋 Customer Details")
 def user_input_features():
-    account_length = st.slider("Account Length", 1, 250, 100)
-    customer_service_calls = st.slider("Customer Service Calls", 0, 10, 1)
-    total_day_minutes = st.slider("Total Day Minutes", 0.0, 400.0, 180.0)
-    total_eve_minutes = st.slider("Total Evening Minutes", 0.0, 400.0, 180.0)
-    total_night_minutes = st.slider("Total Night Minutes", 0.0, 400.0, 180.0)
-    total_intl_minutes = st.slider("Total Intl Minutes", 0.0, 20.0, 10.0)
+    account_length = st.sidebar.slider("Account Length", 1, 250, 100)
+    customer_service_calls = st.sidebar.slider("Customer Service Calls", 0, 10, 1)
+    total_day_minutes = st.sidebar.slider("Total Day Minutes", 0.0, 400.0, 180.0)
+    total_eve_minutes = st.sidebar.slider("Total Evening Minutes", 0.0, 400.0, 180.0)
+    total_night_minutes = st.sidebar.slider("Total Night Minutes", 0.0, 400.0, 180.0)
+    total_intl_minutes = st.sidebar.slider("Total Intl Minutes", 0.0, 20.0, 10.0)
 
     data = {
         "account_length": account_length,
@@ -99,8 +91,12 @@ input_df = input_df[feature_names]
 input_df.columns.name = None
 input_df = input_df.astype(float)
 
+# --- Display Summary Table ---
+st.subheader("📊 Input Summary")
+st.dataframe(input_df.style.format(precision=2), use_container_width=True)
+
 # --- Prediction ---
-if st.button("Predict Churn"):
+if st.button("🔍 Predict Churn"):
     try:
         input_scaled = scaler.transform(input_df)
         prediction = model.predict(input_scaled)[0]
