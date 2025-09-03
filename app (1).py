@@ -88,6 +88,7 @@ for col in feature_names:
         input_df[col] = 0  # default fallback
 
 input_df = input_df[feature_names]
+input_df.columns.name = None  # ensure clean column names
 
 # --- Prediction ---
 if st.button("Predict Churn"):
