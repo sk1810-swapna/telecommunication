@@ -42,43 +42,36 @@ input_df = user_input()
 st.subheader("Customer Input")
 st.write(input_df)
 
-# Align input features with scaler expectations
-try:
-    expected_features = scaler.feature_names_in_
-    missing_cols = [col for col in expected_features if col not in input_df.columns]
+# Add prediction button
+if st.button("🔍 Predict Churn"):
+    try:
+        # Align input features with scaler expectations
+        expected_features = scaler.feature_names_in_
+        missing_cols = [col for col in expected_features if col not in input_df.columns]
 
-    # Fill missing columns with default values
-    for col in missing_cols:
-        input_df[col] = 0.0  # or use np.nan if your scaler handles NaNs
+        # Fill missing columns with default values
+        for col in missing_cols:
+            input_df[col] = 0.0
 
-    # Reorder columns to match scaler
-    input_df = input_df[expected_features]
+        # Reorder columns to match scaler
+        input_df = input_df[expected_features]
 
-    input_scaled = scaler.transform(input_df)
+        # Scale input
+        input_scaled = scaler.transform(input_df)
 
-except ValueError as ve:
-    st.error(f"⚠️ Feature mismatch: {ve}")
-    st.stop()
-except AttributeError:
-    st.warning("⚠️ Scaler does not have 'feature_names_in_'. Using raw values.")
-    input_scaled = scaler.transform(input_df.values)
+        # Predict
+        prediction = model.predict(input_scaled)
+        prediction_proba = model.predict_proba(input_scaled)
 
+        # Show result
+        st.subheader("Prediction Result")
+        if prediction[0] == 1:
+            st.error("🔔 Churn Likely")
+        else:
+            st.success("✅ No Churn Predicted")
 
-# Predict
-try:
-    prediction = model.predict(input_scaled)
-    prediction_proba = model.predict_proba(input_scaled)
-except Exception as e:
-    st.error(f"❌ Prediction failed: {e}")
-    st.stop()
+        # Show probability
+        st.write(f"Probability of churn: {prediction_proba[0][1]:.2%}")
 
-# Show result
-st.subheader("Prediction Result")
-if prediction[0] == 1:
-    st.error("🔔 Churn Likely")
-else:
-    st.success("✅ No Churn Predicted")
-
-# Show probability
-st.write(f"Probability of churn: {prediction_proba[0][1]:.2%}")
-
+    except Exception as e:
+        st.error(f"❌ Error during prediction: {e}")
