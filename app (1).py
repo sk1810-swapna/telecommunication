@@ -45,14 +45,24 @@ st.write(input_df)
 # Align input features with scaler expectations
 try:
     expected_features = scaler.feature_names_in_
+    missing_cols = [col for col in expected_features if col not in input_df.columns]
+
+    # Fill missing columns with default values
+    for col in missing_cols:
+        input_df[col] = 0.0  # or use np.nan if your scaler handles NaNs
+
+    # Reorder columns to match scaler
     input_df = input_df[expected_features]
+
     input_scaled = scaler.transform(input_df)
+
 except ValueError as ve:
     st.error(f"⚠️ Feature mismatch: {ve}")
     st.stop()
 except AttributeError:
     st.warning("⚠️ Scaler does not have 'feature_names_in_'. Using raw values.")
     input_scaled = scaler.transform(input_df.values)
+
 
 # Predict
 try:
