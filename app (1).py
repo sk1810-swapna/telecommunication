@@ -16,17 +16,18 @@ st.title("📉 Churn Prediction App")
 # Sidebar inputs
 st.sidebar.header("Customer Info")
 
-# Define input fields dynamically
+# Create input dictionary dynamically
 input_dict = {}
 for feature in expected_features:
+    label = feature.replace('_', ' ').title()
     if "length" in feature or "calls" in feature or "messages" in feature:
-        input_dict[feature] = st.sidebar.slider(f"{feature.replace('_', ' ').title()}", 0, 250, 50)
+        input_dict[feature] = st.sidebar.slider(label, 0, 250, 50)
     elif "mins" in feature:
-        input_dict[feature] = st.sidebar.slider(f"{feature.replace('_', ' ').title()}", 0.0, 350.0, 180.0)
+        input_dict[feature] = st.sidebar.slider(label, 0.0, 350.0, 180.0)
     elif "charge" in feature:
-        input_dict[feature] = st.sidebar.slider(f"{feature.replace('_', ' ').title()}", 0.0, 60.0, 30.0)
+        input_dict[feature] = st.sidebar.slider(label, 0.0, 60.0, 30.0)
     else:
-        input_dict[feature] = st.sidebar.slider(f"{feature.replace('_', ' ').title()}", 0.0, 100.0, 50.0)
+        input_dict[feature] = st.sidebar.slider(label, 0.0, 100.0, 50.0)
 
 # Align input with expected features
 try:
