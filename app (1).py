@@ -18,7 +18,7 @@ def load_or_train_model():
         feature_names = joblib.load("feature_names.pkl")
     else:
         try:
-            df = pd.read_csv("telecom_churn.csv")
+            df = pd.read_csv("telecommunications_churn (1).csv")
         except FileNotFoundError:
             st.error("❌ Dataset 'telecom_churn.csv' not found. Please upload it to the app directory.")
             st.stop()
