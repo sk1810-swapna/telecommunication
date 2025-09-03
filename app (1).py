@@ -89,14 +89,18 @@ for col in feature_names:
 
 input_df = input_df[feature_names]
 input_df.columns.name = None  # ensure clean column names
+input_df = input_df.astype(float)  # ensure numeric types
 
 # --- Prediction ---
 if st.button("Predict Churn"):
-    input_scaled = scaler.transform(input_df)
-    prediction = model.predict(input_scaled)[0]
-    prediction_proba = model.predict_proba(input_scaled)[0][prediction]
+    try:
+        input_scaled = scaler.transform(input_df)
+        prediction = model.predict(input_scaled)[0]
+        prediction_proba = model.predict_proba(input_scaled)[0][prediction]
 
-    if prediction == 1:
-        st.error(f"⚠️ This customer is likely to churn. Confidence: {prediction_proba:.2f}")
-    else:
-        st.success(f"✅ This customer is likely to stay. Confidence: {prediction_proba:.2f}")
+        if prediction == 1:
+            st.error(f"⚠️ This customer is likely to churn. Confidence: {prediction_proba:.2f}")
+        else:
+            st.success(f"✅ This customer is likely to stay. Confidence: {prediction_proba:.2f}")
+    except ValueError as e:
+        st.error(f"❌ Prediction failed due to input mismatch: {e}")
