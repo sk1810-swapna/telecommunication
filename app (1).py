@@ -45,11 +45,13 @@ except Exception as e:
     st.error(f"❌ Prediction failed: {e}")
     st.stop()
 
-# Output
-if prediction == 1:
-    st.success(f"⚠️ This customer is likely to churn. (Probability: {proba:.2f})")
-else:
-    st.info(f"✅ This customer is likely to stay. (Probability of churn: {proba:.2f})")
+# Output in binary format
+st.subheader("🔢 Churn Prediction (Binary Output)")
+st.code(f"{prediction}", language="text")
+
+# Optional: show probability
+with st.expander("Show Prediction Probability"):
+    st.write(f"Churn Probability: {proba:.2f}")
 
 # Diagnostic check for class diversity
 try:
